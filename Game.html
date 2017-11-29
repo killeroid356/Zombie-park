@@ -1,0 +1,542 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+	<meta charset="UTF-8" />
+    <title>William's game</title>
+	<script type="text/javascript" src="js/phaser.min.js"></script>
+	
+    <style type="text/css">
+		body {margin: 0;}
+		p    {text-align: center; font-size:32px;}
+		
+       
+    </style>
+</head>
+<body>
+<p> Zombie Park </p>
+
+
+<script type="text/javascript">
+
+var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update });
+
+function preload() {
+
+    game.load.image('dirt', 'assets/dirt.png');
+	game.load.image('concrete', 'assets/concrete.png');
+    game.load.image('blood', 'assets/blood.png');
+    
+    game.load.image('ground', 'assets/platform.png');
+	game.load.spritesheet('enemy', 'assets/Humans.png',32,32,10);
+    game.load.spritesheet('dudes', 'assets/zambros.png', 32, 32, 11);
+
+}
+var biting;
+var player;
+var platforms;
+var cursors;
+var enemies;
+var level = 1;
+var scoremult = 1;
+var score = 0;
+var scoreText;
+var spaceBar;
+var cheatButton;
+var reset;
+var blood;
+
+function create() {
+	
+   
+    
+    initLevel(level);
+   
+}
+
+function update() {
+	if (level < 3){
+	game.physics.arcade.collide(enemies, platforms);
+	game.physics.arcade.collide(player, platforms);
+	game.physics.arcade.overlap(enemies, platforms, nudge, null, this);
+	game.physics.arcade.collide(enemies);
+	biting = false;
+	player.body.velocity.x = 0;
+	player.body.velocity.y = 0;
+
+    enemies.forEach(enemyLogic, this);
+	if (cheatButton.isDown) {
+	score = score + 20*scoremult;
+	scoreText.text = 'Score: ' + score;
+	}
+	if (cursors.left.isDown && cursors.up.isDown)
+    {
+        player.body.velocity.x = -100;
+        player.body.velocity.y = -100;
+		player.animations.play('up');
+    }
+    else if (cursors.right.isDown && cursors.up.isDown)
+    {
+        player.body.velocity.x = 100;
+        player.body.velocity.y = -100;
+		player.animations.play('up');
+    }
+    else if (cursors.left.isDown && cursors.down.isDown)
+    {
+		player.body.velocity.x = -100;
+        player.body.velocity.y = 100;
+		
+		player.animations.play('down');
+    }
+	else if (cursors.right.isDown && cursors.down.isDown)
+    {
+		player.body.velocity.x = 100;
+        player.body.velocity.y = 100;
+		player.animations.play('down');
+    }
+    else if (cursors.left.isDown)
+    {
+        player.body.velocity.x = -150;
+
+        player.animations.play('left');
+    }
+    else if (cursors.right.isDown)
+    {
+        player.body.velocity.x =150;
+
+        player.animations.play('right');
+    }
+    else if (cursors.up.isDown)
+    {
+        player.body.velocity.y = -150;
+		player.animations.play('up');
+    }
+	else if (cursors.down.isDown)
+    {
+        player.body.velocity.y = 150;
+		player.animations.play('down');
+    }
+	else if (spaceBar.isDown)
+    {
+		player.animations.play('bite');
+		biting = true;
+    }
+	else
+    {
+        player.animations.stop();
+
+        player.frame = 10;
+    }
+	if (biting){
+		game.physics.arcade.overlap(player, enemies, collectEnemy, null, this);
+	}
+	if(score >= scoremult*1800){
+		
+		level = level+1;
+		scoremult = scoremult+1;
+		clearLevel();
+		initLevel(level);
+		
+		
+	}
+	
+	}
+	if (reset.duration<20){
+		if (reset.isDown) {
+			level = 1;
+			scoremult = 1;
+			clearLevel();
+			initLevel(level);
+		}
+    }
+	game.physics.arcade.collide(enemies);
+	game.physics.arcade.collide(enemies, platforms);
+}
+ 
+
+
+	
+function nudge(enemy) {
+	enemy.body.x = enemy.body.x +1;
+	enemy.body.y = enemy.body.y +1;
+}
+function collectEnemy(player, enemy) {
+	
+    var blood = game.add.sprite(enemy.body.x,enemy.body.y, 'blood');
+	game.world.swap(blood, player);
+	game.world.swap(player, scoreText);
+	game.world.swap(enemies,blood);
+    enemy.kill();
+
+    score += 150;
+    scoreText.text = 'Score: ' + score;
+
+}
+function initialise(enemy) {
+
+	enemy.animations.add('left', [2, 3, 2, 3], 10, true);
+    enemy.animations.add('right', [0, 1, 0 , 1], 10, true);
+	enemy.animations.add('up', [4, 5, 4, 5], 10, true);
+    enemy.animations.add('down', [6, 7, 6, 7], 10, true);
+	enemy.body.collideWorldBounds = true;
+	
+	
+
+
+}
+function enemyLogic(enemy) {
+	
+	game.physics.arcade.collide(enemy, enemies);
+    if(!(player.body.y+198 <= enemy.body.y || player.body.y-150 >= enemy.body.y) && !(player.body.x+198 <= enemy.body.x || player.body.x-150 >= enemy.body.x)){
+	
+		if(!(player.body.y+98 <= enemy.body.y || player.body.y-50 >= enemy.body.y) && player.body.x+24 < enemy.body.x){
+	
+			enemy.body.velocity.x = 80;
+			enemy.body.velocity.y = 0;
+		
+			enemy.animations.play('right');
+
+		}
+		else if(!(player.body.y+98 <= enemy.body.y || player.body.y-50 >= enemy.body.y) && player.body.x+24 > enemy.body.x){
+	
+			enemy.body.velocity.x = -80;
+			enemy.body.velocity.y = 0;
+		
+			enemy.animations.play('left');
+
+		}
+		else if(!(player.body.x+98 <= enemy.body.x || player.body.x-50 >= enemy.body.x) && player.body.y+24 < enemy.body.y){
+	
+			enemy.body.velocity.x = 0;
+			enemy.body.velocity.y = 80;
+		
+			enemy.animations.play('down');
+
+		}
+		else if(!(player.body.x+98 <= enemy.body.x || player.body.x-50 >= enemy.body.x) && player.body.y+24 > enemy.body.y){
+	
+			enemy.body.velocity.x = 0;
+			enemy.body.velocity.y = -80;
+		
+			enemy.animations.play('up');
+
+		}
+		else if(player.body.x > enemy.body.x && player.body.y > enemy.body.y){
+	
+			enemy.body.velocity.x = -50;
+			enemy.body.velocity.y = -50;
+			enemy.animations.play('up');
+
+		}
+		else if(player.body.x < enemy.body.x && player.body.y < enemy.body.y){
+	
+			enemy.body.velocity.x = 50;
+			enemy.body.velocity.y = 50;
+			enemy.animations.play('down');
+
+		}
+		else if(player.body.x > enemy.body.x && player.body.y < enemy.body.y){
+	
+			enemy.body.velocity.x = -50;
+			enemy.body.velocity.y = 50;
+			enemy.animations.play('down');
+
+		}
+		else if(player.body.x < enemy.body.x && player.body.y > enemy.body.y){
+	
+			enemy.body.velocity.x = 50;
+			enemy.body.velocity.y = -50;
+			enemy.animations.play('up');
+
+		}
+		
+	}else {
+			enemy.animations.stop();
+			enemy.frame = 8;
+			enemy.body.velocity.x = 0;
+			enemy.body.velocity.y = 0;
+		
+	}
+
+    
+}
+function initLevel(level){
+	game.physics.startSystem(Phaser.Physics.ARCADE);
+	game.world.setBounds(0, 0, 800, 600);
+	
+	if (level==1){
+	 
+	
+	game.add.sprite(0, 0, 'dirt');
+	enemies = game.add.group();
+	enemies.enableBody = true;
+	
+	for(var i = 0 ; i < 5 ; i++)
+	{
+	
+		var enemy = enemies.create(i*100+80, 50+game.rnd.integerInRange(-10,10), 'enemy');
+		
+	
+	}
+	for(var i = 0 ; i < 5 ; i++)
+	{
+	
+		var enemy = enemies.create(700+game.rnd.integerInRange(-15,15), i*80+60, 'enemy');
+		
+	}
+	for(var i = 0 ; i < 2 ; i++)
+	{
+	
+		var enemy = enemies.create(game.rnd.integerInRange(340,460),game.rnd.integerInRange(135,250), 'enemy');
+		
+	}
+    spaceBar = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+	cheatButton = game.input.keyboard.addKey(Phaser.Keyboard.ONE);
+    platforms = game.add.group();
+
+    platforms.enableBody = true;
+	
+    var ground = platforms.create(0, game.world.height - 32, 'ground');
+
+    ground.scale.setTo(2, 1);
+
+    ground.body.immovable = true;
+
+    var ledge = platforms.create(300, 300, 'ground');
+	ledge.scale.setTo(0.5,1)
+    ledge.body.immovable = true;
+	
+    ledge = platforms.create(300, 100, 'ground');
+    ledge.body.immovable = true;
+	ledge.scale.setTo(0.5,1)
+	
+	ledge = platforms.create(300, 100, 'ground');
+    ledge.body.immovable = true;
+	ledge.scale.setTo(0.08,4)
+	
+	ledge = platforms.create(500, 100, 'ground');
+    ledge.body.immovable = true;
+	ledge.scale.setTo(0.08,7.25)
+	
+    player = game.add.sprite(32, game.world.height - 150, 'dudes');
+	player.scale.setTo(1.5,1.5);
+	player.enableBody = true;
+    game.physics.enable(player);
+	game.physics.enable(enemies);
+
+    player.body.gravity.y = 0;
+	
+    player.body.collideWorldBounds = true;
+	
+
+	player.animations.add('left', [2, 3, 2, 3], 8, true);
+    player.animations.add('right', [0, 1, 0 , 1], 8, true);
+	player.animations.add('up', [4, 5, 4, 5], 8, true);
+    player.animations.add('down', [6, 7, 6, 7], 8, true);
+    player.animations.add('bite', [8, 9, 8, 9], 4, true);
+    enemies.forEach(initialise, this);
+	scoreText = game.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#000' });
+	reset = game.input.keyboard.addKey(Phaser.Keyboard.R);
+	
+	cursors = game.input.keyboard.createCursorKeys();
+
+	}
+	else if (level == 2){
+	
+
+	cheatButton = game.input.keyboard.addKey(Phaser.Keyboard.ONE);
+	game.add.sprite(800, 0, 'dirt');
+	game.add.sprite(800, 600, 'dirt');
+	game.add.sprite(0, 0, 'concrete');
+	game.add.sprite(0, 600, 'concrete');
+	
+	player = game.add.sprite(700, 276, 'dudes');
+	player.scale.setTo(1.5,1.5);
+	game.physics.enable(player);
+	game.physics.enable(enemies);
+	game.world.setBounds(0, 0, 1600, 1200);
+	player.anchor.x = 0.5;
+
+	game.camera.follow(player);
+
+    
+	player.body.gravity.y = 0;
+	player.body.gravity.x = 0;
+	player.body.collideWorldBounds = true;
+	player.animations.add('left', [2, 3, 2, 3], 8, true);
+    player.animations.add('right', [0, 1, 0 , 1], 8, true);
+	player.animations.add('up', [4, 5, 4, 5], 8, true);
+    player.animations.add('down', [6, 7, 6, 7], 8, true);
+    player.animations.add('bite', [8, 9, 8, 9], 4, true);
+    enemies.forEach(initialise, this);
+	cursors = game.input.keyboard.createCursorKeys();
+	spaceBar = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+    platforms = game.add.group();
+	reset = game.input.keyboard.addKey(Phaser.Keyboard.R);
+	platforms.enableBody = true;
+	enemies = game.add.group();
+	enemies.enableBody = true;
+	
+	// enemies
+	for(var i = 0 ; i < 3 ; i++)
+	{
+		// room 1
+		var enemy = enemies.create(game.rnd.integerInRange(390,550), game.rnd.integerInRange(50,160), 'enemy');
+		
+	}
+	for(var i = 0 ; i < 3 ; i++)
+	{
+		// room 2
+		var enemy = enemies.create(game.rnd.integerInRange(390,550), game.rnd.integerInRange(390,520), 'enemy');
+		
+	}
+	for(var i = 0 ; i < 2 ; i++)
+	{
+		// room 3
+		var enemy = enemies.create(game.rnd.integerInRange(40,180), game.rnd.integerInRange(40,180), 'enemy');
+		
+	}
+	for(var i = 0 ; i < 2 ; i++)
+	{
+		// room 4
+		var enemy = enemies.create(game.rnd.integerInRange(40,180), game.rnd.integerInRange(425,500), 'enemy');
+		
+	}
+	
+	for(var i = 0 ; i < 2 ; i++)
+	{
+		// room 5
+		var enemy = enemies.create(game.rnd.integerInRange(40,180), game.rnd.integerInRange(884,1100), 'enemy');
+		
+	}
+	// coridor peeps
+	var enemy = enemies.create(300, 280, 'enemy');
+	var enemy = enemies.create(110, 320, 'enemy');
+	
+	for(var i = 0 ; i < 10 ; i++)
+	{
+		// scattered peeps
+		var enemy = enemies.create(game.rnd.integerInRange(800,1500), game.rnd.integerInRange(0,1100), 'enemy');
+		
+	}
+		
+	enemies.forEach(initialise, this);	
+	//room 1
+	var ledge = platforms.create(350, 200, 'ground');
+	ledge.scale.setTo(0.3,1);
+    ledge.body.immovable = true;
+	
+    ledge = platforms.create(550, 200, 'ground');
+    ledge.body.immovable = true;
+	ledge.scale.setTo(0.13,1);
+	
+	ledge = platforms.create(350, 0, 'ground');
+    ledge.body.immovable = true;
+	ledge.scale.setTo(0.08,7.25);
+	
+	ledge = platforms.create(600, 0, 'ground');
+    ledge.body.immovable = true;
+	ledge.scale.setTo(0.08,7.25);
+	
+	ledge = platforms.create(350, 0, 'ground');
+    ledge.body.immovable = true;
+	ledge.scale.setTo(0.7,1);
+	
+	//room 2
+	
+	ledge = platforms.create(350, 350, 'ground');
+	ledge.scale.setTo(0.3,1);
+    ledge.body.immovable = true;
+	
+    ledge = platforms.create(550, 350, 'ground');
+    ledge.body.immovable = true;
+	ledge.scale.setTo(0.13,1);
+	
+	ledge = platforms.create(350, 350, 'ground');
+    ledge.body.immovable = true;
+	ledge.scale.setTo(0.08,7.8);
+	
+	ledge = platforms.create(600, 350, 'ground');
+    ledge.body.immovable = true;
+	ledge.scale.setTo(0.08,7.8);
+	
+	ledge = platforms.create(350, 568, 'ground');
+    ledge.body.immovable = true;
+	ledge.scale.setTo(0.7,13.8);
+	
+	//room 3 & 4
+		
+	ledge = platforms.create(0, 0, 'ground');
+	ledge.scale.setTo(0.6,1);
+    ledge.body.immovable = true;
+	
+    ledge = platforms.create(0, 568, 'ground');
+    ledge.body.immovable = true;
+	ledge.scale.setTo(0.68,1);
+	
+	ledge = platforms.create(0, 680, 'ground');
+    ledge.body.immovable = true;
+	ledge.scale.setTo(0.68,6);
+	
+	ledge = platforms.create(240, 0, 'ground');
+    ledge.body.immovable = true;
+	ledge.scale.setTo(0.08,2.5);
+	
+	ledge = platforms.create(0, 0, 'ground');
+    ledge.body.immovable = true;
+	ledge.scale.setTo(0.08,18.6);
+	
+	ledge = platforms.create(32, 220, 'ground');
+	ledge.scale.setTo(0.16,6);
+    ledge.body.immovable = true;
+	
+    ledge = platforms.create(176, 220, 'ground');
+    ledge.body.immovable = true;
+	ledge.scale.setTo(0.16,6);
+	
+	ledge = platforms.create(240, 175, 'ground');
+    ledge.body.immovable = true;
+	ledge.scale.setTo(0.08,13.2);
+	
+	//room 5
+	
+	ledge = platforms.create(240, 872, 'ground');
+    ledge.body.immovable = true;
+	ledge.scale.setTo(0.08,4.3);
+	
+	ledge = platforms.create(0, 872, 'ground');
+    ledge.body.immovable = true;
+	ledge.scale.setTo(0.08,10.5);
+	
+	ledge = platforms.create(240, 1090, 'ground');
+    ledge.body.immovable = true;
+	ledge.scale.setTo(0.975,4.3);
+	
+	ledge = platforms.create(0, 1140, 'ground');
+    ledge.body.immovable = true;
+	ledge.scale.setTo(0.68,4.3);
+	
+	
+	scoreText = game.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#000' });
+	scoreText.fixedToCamera = true;
+    
+	
+	}
+	else {
+	clearLevel();
+	game.add.text(250, 200, 'END OF DEMO', { fontSize: '48px', fill: '#FFF' });
+	game.add.text(300, 300, 'R TO RESTART', { fontSize: '32px', fill: '#FFF' });
+	reset = game.input.keyboard.addKey(Phaser.Keyboard.R);
+	}
+}
+
+
+function clearLevel(){
+	game.world.removeAll();
+	score = 0;
+}
+
+
+</script>
+
+</body>
+</html>

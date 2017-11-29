@@ -1,0 +1,5 @@
+1. open node js cmd window
+2. type "npm install http-server -g"
+3. type "http-server"
+4. open chrome and use 127.0.0.1:8080
+5. disable cache by using F12
